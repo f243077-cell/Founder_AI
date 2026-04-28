@@ -7,11 +7,26 @@ if (process.env.NODE_ENV !== 'production') {
     require('dotenv').config();
 }
 
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+const SYSTEM_PROMPT = `You are FounderAI, an assistant for startup founders. 
+Help with investor updates, follow-ups, task management and accelerator applications. 
+Be concise and actionable.`;
+
+app.use(cors());
+app.use(express.json());
+app.use(express.static(path.join(__dirname, 'public')));
+app.use('/js', express.static(path.join(__dirname, 'js')));
+
 // ─── OpenRouter AI Function ───
 async function callAI(prompt) {
     const apiKey = process.env.OPENROUTER_API_KEY;
     console.log("API Key exists:", !!apiKey);
-    if (!apiKey) throw new Error("OPENROUTER_API_KEY not set!");
+
+    if (!apiKey) {
+        throw new Error("OPENROUTER_API_KEY not set in environment!");
+    }
 
     const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
         method: "POST",
@@ -24,36 +39,27 @@ async function callAI(prompt) {
         body: JSON.stringify({
             model: "meta-llama/llama-3.1-8b-instruct:free",
             messages: [
-                { role: "system", content: `You are FounderAI, an assistant for startup founders. Help with investor updates, follow-ups, task management and accelerator applications. Be concise and actionable.` },
+                { role: "system", content: SYSTEM_PROMPT },
                 { role: "user", content: prompt }
             ]
         })
     });
+
     const data = await response.json();
-    if (!response.ok) throw new Error(data.error?.message || "OpenRouter API error");
+    console.log("OpenRouter response status:", response.status);
+
+    if (!response.ok) {
+        throw new Error(data.error?.message || "OpenRouter API error");
+    }
+
     return data.choices[0].message.content;
 }
 
-const app = express();
-const PORT = process.env.PORT || 3000;
-
-const SYSTEM_PROMPT = `You are FounderAI, an assistant for startup founders. Help with investor updates, follow-ups, task management and accelerator applications. Be concise and actionable.`;
-
-app.use(cors());
-app.use(express.json());
-
-// Serve static files
-app.use(express.static(path.join(__dirname, 'public')));
-app.use('/js', express.static(path.join(__dirname, 'js')));
-
-
-
-// ─── Health Check (to verify API key status) ───
+// ─── Health Check ───
 app.get('/api/health', (req, res) => {
     res.json({
         status: 'ok',
         aiReady: !!process.env.OPENROUTER_API_KEY,
-        
         timestamp: new Date().toISOString()
     });
 });
@@ -61,10 +67,6 @@ app.get('/api/health', (req, res) => {
 // ─── Daily Briefing ───
 app.post('/api/daily-briefing', async (req, res) => {
     try {
-            return res.status(503).json({ 
-            });
-        }
-
         const { userName, tasks, leads, deadlines, overdue, taskList } = req.body;
         const now = new Date();
         const hour = now.getHours();
@@ -94,20 +96,18 @@ ${greeting} ${userName || 'Founder'}. You have:
 - [Most urgent deadline] due [day]
 - $[X,XXX] monthly burn rate
 
-Your #1 priority today: [Pick the most urgent item from the task list above and explain why it's the priority. Be specific.]
+Your #1 priority today: [Pick the most urgent item and explain why. Be specific.]
 
 Here's a draft email ready to send:
 
-Subject: [relevant subject based on the #1 priority]
+Subject: [relevant subject]
 Hi [realistic name],
-[3-4 sentence professional email body that directly addresses the priority action]
+[3-4 sentence professional email body]
 Best,
 ${userName || 'Founder'}
 
 RULES:
-- Use the REAL task names and numbers provided above
-- Make it feel personal and specific to THIS founder
-- The draft email must be ready to copy-paste and send
+- Use the REAL task names and numbers provided
 - Keep the entire briefing under 250 words`;
 
         const reply = await callAI(prompt);
@@ -121,9 +121,6 @@ RULES:
 // ─── General Chat ───
 app.post('/api/chat', async (req, res) => {
     try {
-            return res.status(503).json({ 
-            });
-        }
         const { prompt } = req.body;
         if (!prompt) {
             return res.status(400).json({ error: "Prompt is required" });
@@ -139,19 +136,16 @@ app.post('/api/chat', async (req, res) => {
 // ─── Investor Update ───
 app.post('/api/investor-update', async (req, res) => {
     try {
-
         const { details } = req.body;
-        const prompt = `Generate a professional monthly investor update email for a startup founder.
-Use the following details:
-${details || "MRR: $XX, Growth: XX%, Runway: XX months, Key wins: [list wins], Challenges: [list challenges]"}
+        const prompt = `Generate a professional monthly investor update email.
+Details: ${details || "MRR: $XX, Growth: XX%, Runway: XX months"}
 
-Format it as a ready-to-send email with:
+Format as ready-to-send email with:
 - Subject line
-- Greeting
-- Key Metrics section (MRR, growth, runway)
+- Key Metrics (MRR, growth, runway)
 - Highlights / Wins
-- Challenges & how we're addressing them
-- Asks / how investors can help
+- Challenges & solutions
+- Asks from investors
 - Sign off`;
 
         const reply = await callAI(prompt);
@@ -165,17 +159,16 @@ Format it as a ready-to-send email with:
 // ─── Follow-up Email ───
 app.post('/api/followup-email', async (req, res) => {
     try {
-
         const { leadName } = req.body;
-        const prompt = `Write a professional follow-up email to ${leadName || "a potential lead/investor"} after an initial meeting.
+        const prompt = `Write a professional follow-up email to ${leadName || "a potential lead"} after an initial meeting.
 
-The email should:
-- Reference a recent meeting/call
-- Recap key discussion points briefly
+Requirements:
+- Reference recent meeting
+- Recap key points briefly
 - Propose clear next steps
-- Be warm but professional
-- Be concise (under 150 words)
-- Include a subject line`;
+- Warm but professional tone
+- Under 150 words
+- Include subject line`;
 
         const reply = await callAI(prompt);
         res.json({ reply });
@@ -188,24 +181,20 @@ The email should:
 // ─── Accelerator Application ───
 app.post('/api/accelerator-app', async (req, res) => {
     try {
-
         const { companyDetails } = req.body;
-        const prompt = `Draft answers for a Y Combinator / Techstars-style accelerator application.
-Use the following company details:
-${companyDetails || "Company: [Name], Industry: [Industry], Stage: [Stage], Traction: [Traction details]"}
+        const prompt = `Draft a Y Combinator style accelerator application.
+Company details: ${companyDetails || "Company: [Name], Industry: [Industry], Stage: [Stage]"}
 
-Generate compelling answers for these sections:
-1. What does your company do? (1-2 sentences)
-2. Why did you pick this idea to work on?
+Answer these sections concisely:
+1. What does your company do?
+2. Why this idea?
 3. What progress have you made?
 4. What is the market size?
-5. Why now? What has changed?
-6. What is your unfair advantage?
-7. What is your business model?
-8. Who are your competitors and what makes you different?
-9. How will you acquire users/customers?
-
-Keep each answer concise, data-driven, and compelling.`;
+5. Why now?
+6. Your unfair advantage?
+7. Business model?
+8. Competitors and differentiation?
+9. How will you acquire users?`;
 
         const reply = await callAI(prompt);
         res.json({ reply });
@@ -218,23 +207,22 @@ Keep each answer concise, data-driven, and compelling.`;
 // ─── Summarize Week ───
 app.post('/api/summarize-week', async (req, res) => {
     try {
-
         const { taskList, userName } = req.body;
         const tasks = taskList && taskList.length > 0
             ? taskList.join('\n- ')
-            : 'No tasks found — generate a sample weekly summary for a startup founder.';
+            : 'No tasks found.';
 
-        const prompt = `Summarize the week for startup founder ${userName || 'Founder'}.
+        const prompt = `Summarize the week for founder ${userName || 'Founder'}.
 
-Their tasks this week:
+Tasks this week:
 - ${tasks}
 
-Generate a weekly summary with these sections:
-1. 🏆 Wins This Week (completed or progressed items)
-2. ⏳ Still Pending (items needing attention)
-3. 🎯 Top Priorities for Next Week (3 actionable items)
+Generate summary with:
+1. 🏆 Wins This Week
+2. ⏳ Still Pending
+3. 🎯 Top 3 Priorities for Next Week
 
-Be concise. Use bullet points. Keep under 200 words.`;
+Keep under 200 words. Use bullet points.`;
 
         const reply = await callAI(prompt);
         res.json({ reply });
@@ -244,7 +232,7 @@ Be concise. Use bullet points. Keep under 200 words.`;
     }
 });
 
-// Fallback routing
+// ─── Fallback routing ───
 app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
