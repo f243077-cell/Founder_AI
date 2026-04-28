@@ -1,7 +1,38 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
-require('dotenv').config();
+
+// Only load dotenv in development
+if (process.env.NODE_ENV !== 'production') {
+    require('dotenv').config();
+}
+
+// ─── OpenRouter AI Function ───
+async function callAI(prompt) {
+    const apiKey = process.env.OPENROUTER_API_KEY;
+    console.log("API Key exists:", !!apiKey);
+    if (!apiKey) throw new Error("OPENROUTER_API_KEY not set!");
+
+    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: {
+            "Authorization": `Bearer ${apiKey}`,
+            "Content-Type": "application/json",
+            "HTTP-Referer": "https://founderai.up.railway.app",
+            "X-Title": "FounderAI"
+        },
+        body: JSON.stringify({
+            model: "meta-llama/llama-3.1-8b-instruct:free",
+            messages: [
+                { role: "system", content: `You are FounderAI, an assistant for startup founders. Help with investor updates, follow-ups, task management and accelerator applications. Be concise and actionable.` },
+                { role: "user", content: prompt }
+            ]
+        })
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error?.message || "OpenRouter API error");
+    return data.choices[0].message.content;
+}
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -11,40 +42,29 @@ const SYSTEM_PROMPT = `You are FounderAI, an assistant for startup founders. Hel
 app.use(cors());
 app.use(express.json());
 
-// Serve static files from 'public' and 'js' directories
+// Serve static files
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/js', express.static(path.join(__dirname, 'js')));
 
-// Dynamic import for Gemini SDK (ES Module)
-let genAI;
-let model;
 
-async function initGemini() {
-    try {
-        const { GoogleGenerativeAI } = await import('@google/generative-ai');
-        genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-        model = genAI.getGenerativeModel({
-            model: "gemini-2.0-flash",
-            systemInstruction: SYSTEM_PROMPT
-        });
-        console.log("Gemini AI initialized (gemini-2.0-flash)");
-    } catch (err) {
-        console.error("Error initializing Gemini:", err.message);
-    }
-}
-initGemini();
 
-// Helper: send a prompt to Gemini and return the text
-async function callGemini(prompt) {
-    if (!model) throw new Error("AI model not initialized");
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    return response.text();
-}
+// ─── Health Check (to verify API key status) ───
+app.get('/api/health', (req, res) => {
+    res.json({
+        status: 'ok',
+        aiReady: !!process.env.OPENROUTER_API_KEY,
+        
+        timestamp: new Date().toISOString()
+    });
+});
 
-// ───────── Daily Briefing ─────────
+// ─── Daily Briefing ───
 app.post('/api/daily-briefing', async (req, res) => {
     try {
+            return res.status(503).json({ 
+            });
+        }
+
         const { userName, tasks, leads, deadlines, overdue, taskList } = req.body;
         const now = new Date();
         const hour = now.getHours();
@@ -90,29 +110,36 @@ RULES:
 - The draft email must be ready to copy-paste and send
 - Keep the entire briefing under 250 words`;
 
-        const reply = await callGemini(prompt);
+        const reply = await callAI(prompt);
         res.json({ reply });
     } catch (error) {
         console.error("Daily briefing error:", error.message);
-        res.status(500).json({ error: "Failed to generate daily briefing" });
+        res.status(500).json({ error: error.message });
     }
 });
 
-// ───────── General Chat ─────────
+// ─── General Chat ───
 app.post('/api/chat', async (req, res) => {
     try {
+            return res.status(503).json({ 
+            });
+        }
         const { prompt } = req.body;
-        const reply = await callGemini(prompt);
+        if (!prompt) {
+            return res.status(400).json({ error: "Prompt is required" });
+        }
+        const reply = await callAI(prompt);
         res.json({ reply });
     } catch (error) {
         console.error("Chat error:", error.message);
-        res.status(500).json({ error: "Failed to generate AI response" });
+        res.status(500).json({ error: error.message });
     }
 });
 
-// ───────── Generate Investor Update ─────────
+// ─── Investor Update ───
 app.post('/api/investor-update', async (req, res) => {
     try {
+
         const { details } = req.body;
         const prompt = `Generate a professional monthly investor update email for a startup founder.
 Use the following details:
@@ -127,17 +154,18 @@ Format it as a ready-to-send email with:
 - Asks / how investors can help
 - Sign off`;
 
-        const reply = await callGemini(prompt);
+        const reply = await callAI(prompt);
         res.json({ reply });
     } catch (error) {
         console.error("Investor update error:", error.message);
-        res.status(500).json({ error: "Failed to generate investor update" });
+        res.status(500).json({ error: error.message });
     }
 });
 
-// ───────── Generate Follow-up Email ─────────
+// ─── Follow-up Email ───
 app.post('/api/followup-email', async (req, res) => {
     try {
+
         const { leadName } = req.body;
         const prompt = `Write a professional follow-up email to ${leadName || "a potential lead/investor"} after an initial meeting.
 
@@ -149,17 +177,18 @@ The email should:
 - Be concise (under 150 words)
 - Include a subject line`;
 
-        const reply = await callGemini(prompt);
+        const reply = await callAI(prompt);
         res.json({ reply });
     } catch (error) {
         console.error("Follow-up email error:", error.message);
-        res.status(500).json({ error: "Failed to generate follow-up email" });
+        res.status(500).json({ error: error.message });
     }
 });
 
-// ───────── Draft Accelerator Application ─────────
+// ─── Accelerator Application ───
 app.post('/api/accelerator-app', async (req, res) => {
     try {
+
         const { companyDetails } = req.body;
         const prompt = `Draft answers for a Y Combinator / Techstars-style accelerator application.
 Use the following company details:
@@ -178,17 +207,18 @@ Generate compelling answers for these sections:
 
 Keep each answer concise, data-driven, and compelling.`;
 
-        const reply = await callGemini(prompt);
+        const reply = await callAI(prompt);
         res.json({ reply });
     } catch (error) {
         console.error("Accelerator app error:", error.message);
-        res.status(500).json({ error: "Failed to draft accelerator application" });
+        res.status(500).json({ error: error.message });
     }
 });
 
-// ───────── Summarize Week ─────────
+// ─── Summarize Week ───
 app.post('/api/summarize-week', async (req, res) => {
     try {
+
         const { taskList, userName } = req.body;
         const tasks = taskList && taskList.length > 0
             ? taskList.join('\n- ')
@@ -206,19 +236,20 @@ Generate a weekly summary with these sections:
 
 Be concise. Use bullet points. Keep under 200 words.`;
 
-        const reply = await callGemini(prompt);
+        const reply = await callAI(prompt);
         res.json({ reply });
     } catch (error) {
         console.error("Summarize week error:", error.message);
-        res.status(500).json({ error: "Failed to summarize week" });
+        res.status(500).json({ error: error.message });
     }
 });
 
 // Fallback routing
-app.get('/', (req, res) => {
+app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 app.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`);
+    console.log(`✅ Server running on http://localhost:${PORT}`);
+    console.log(`🔑 OpenRouter Key set: ${!!process.env.OPENROUTER_API_KEY}`);
 });
