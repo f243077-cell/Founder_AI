@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FounderAI - Chat</title>
+    <link rel="stylesheet" href="/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+</head>
+<body class="page-transition">
+    <nav class="navbar">
+        <a href="/dashboard.html" class="nav-brand">
+            <h2 class="logo-title">Founder<span class="accent">AI</span></h2>
+        </a>
+        <div class="nav-links">
+            <a href="/dashboard.html" class="nav-link">Dashboard</a>
+        </div>
+    </nav>
+
+    <main class="chat-container">
+        <div class="chat-messages" id="chat-messages">
+            <div class="message ai-message">
+                <div class="message-content">
+                    Hello! I'm FounderAI, your operational assistant. How can I help you streamline your startup today?
+                </div>
+            </div>
+        </div>
+        
+        <div class="chat-input-area">
+            <button id="voice-btn" class="btn voice-btn" title="Voice input">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                    <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                    <line x1="12" y1="19" x2="12" y2="23"/>
+                    <line x1="8" y1="23" x2="16" y2="23"/>
+                </svg>
+                <span class="voice-label" id="voice-label"></span>
+            </button>
+            <input type="text" id="chat-input" placeholder="Ask about metrics, draft emails, or plan tasks...">
+            <button id="send-btn" class="btn primary-btn">Send</button>
+        </div>
+    </main>
+
+    <script type="module" src="/js/firebase.js"></script>
+    <script type="module" src="/js/auth.js"></script>
+    <script type="module" src="/js/gemini.js"></script>
+</body>
+</html>

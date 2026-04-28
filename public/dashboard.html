@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FounderAI - Dashboard</title>
+    <meta name="description" content="FounderAI founder dashboard — track tasks, leads, deadlines and get AI-powered assistance.">
+    <link rel="stylesheet" href="/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body class="page-transition">
+    <!-- Toast Notifications -->
+    <div class="toast-container" id="toast-container"></div>
+    <!-- Confetti Canvas -->
+    <canvas id="confetti-canvas"></canvas>
+    <!-- ───────── Navbar ───────── -->
+    <nav class="navbar" id="navbar">
+        <a href="/dashboard.html" class="nav-brand">
+            <h2 class="logo-title">Founder<span class="accent">AI</span></h2>
+        </a>
+        <div class="nav-links">
+            <a href="/dashboard.html" class="nav-link active">Dashboard</a>
+            <a href="/chat.html" class="nav-link">AI Chat</a>
+            <div class="user-avatar" id="user-avatar" title="Account">
+                <span id="avatar-letter">F</span>
+            </div>
+            <button id="theme-toggle" class="btn secondary-btn btn-sm" title="Toggle theme">🌙</button>
+            <button id="logout-btn" class="btn secondary-btn btn-sm">Logout</button>
+        </div>
+    </nav>
+
+    <main class="dashboard-container">
+        <!-- ───────── Header ───────── -->
+        <header class="dashboard-header" id="dashboard-header">
+            <div class="greeting">
+                <h1><span id="greeting-text">Good morning,</span> <span id="user-name" class="accent">Founder</span></h1>
+                <p class="header-sub">Here's your operational snapshot for today.</p>
+            </div>
+        </header>
+
+        <!-- ───────── AI Daily Briefing ───────── -->
+        <section class="briefing-section" id="briefing-section">
+            <div class="briefing-card" id="briefing-card">
+                <div class="briefing-header">
+                    <span class="briefing-icon">🧠</span>
+                    <h3>Your AI Daily Briefing</h3>
+                    <button class="btn secondary-btn btn-sm" id="refresh-briefing" title="Regenerate">↻</button>
+                </div>
+                <div class="briefing-body" id="briefing-body">
+                    <div class="briefing-skeleton">
+                        <div class="skeleton-line w80"></div>
+                        <div class="skeleton-line w60"></div>
+                        <div class="skeleton-line w90"></div>
+                        <div class="skeleton-line w70"></div>
+                        <div class="skeleton-line w50"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ───────── Metric Cards ───────── -->
+        <section class="metrics-section" id="metrics-section">
+            <div class="metric-card" id="metric-tasks">
+                <div class="metric-icon">📋</div>
+                <div class="metric-body">
+                    <span class="metric-value" id="metric-tasks-value">5</span>
+                    <span class="metric-label">Pending Tasks</span>
+                </div>
+                <div class="metric-trend up">↑ 2 new</div>
+            </div>
+            <div class="metric-card" id="metric-leads">
+                <div class="metric-icon">🤝</div>
+                <div class="metric-body">
+                    <span class="metric-value" id="metric-leads-value">12</span>
+                    <span class="metric-label">Active Leads</span>
+                </div>
+                <div class="metric-trend up">↑ 3 this week</div>
+            </div>
+            <div class="metric-card" id="metric-deadlines">
+                <div class="metric-icon">⏰</div>
+                <div class="metric-body">
+                    <span class="metric-value" id="metric-deadlines-value">3</span>
+                    <span class="metric-label">Upcoming Deadlines</span>
+                </div>
+                <div class="metric-trend warn">⚠ 1 overdue</div>
+            </div>
+            <!-- Founder Score -->
+            <div class="metric-card" id="metric-score">
+                <div class="founder-score-ring">
+                    <svg viewBox="0 0 80 80">
+                        <circle cx="40" cy="40" r="34" class="ring-bg"/>
+                        <circle cx="40" cy="40" r="34" class="ring-fill" id="score-ring-fill"/>
+                    </svg>
+                    <span class="score-value" id="founder-score-value">0</span>
+                </div>
+                <div class="metric-body">
+                    <span class="metric-label">Founder Score</span>
+                </div>
+            </div>
+            <!-- Streak -->
+            <div class="metric-card" id="metric-streak">
+                <div class="metric-icon" id="streak-icon">📅</div>
+                <div class="metric-body">
+                    <span class="metric-value" id="streak-value">0</span>
+                    <span class="metric-label">Day Streak</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- ───────── Inline AI Chat ───────── -->
+        <section class="dash-chat-section" id="dash-chat-section">
+            <h3 class="section-title">💬 Ask FounderAI</h3>
+            <div class="dash-chat-box" id="dash-chat-box">
+                <div class="dash-chat-messages" id="dash-chat-messages">
+                    <div class="message ai-message">
+                        <div class="message-content">Hi! I can help you draft emails, analyze metrics, or plan your week. What do you need?</div>
+                    </div>
+                </div>
+                <div class="dash-chat-input-area">
+                    <input type="text" id="dash-chat-input" placeholder="e.g. Summarise yesterday's meeting notes…" autocomplete="off">
+                    <button id="dash-send-btn" class="btn primary-btn">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ───────── One Click Actions ───────── -->
+        <section class="quick-actions" id="one-click-actions">
+            <h3 class="section-title">🚀 One Click Actions</h3>
+            <div class="action-grid action-grid-4">
+                <button class="action-card" id="oca-followup" data-modal="modal-followup">
+                    <span class="action-icon-wrap email">📧</span>
+                    <div class="action-text">
+                        <span class="action-name">Follow Up Email</span>
+                        <span class="action-desc">Enter a name, get a full email.</span>
+                    </div>
+                </button>
+                <button class="action-card" id="oca-investor" data-modal="modal-investor">
+                    <span class="action-icon-wrap investor">📈</span>
+                    <div class="action-text">
+                        <span class="action-name">Investor Update</span>
+                        <span class="action-desc">Enter MRR + a win, get the update.</span>
+                    </div>
+                </button>
+                <button class="action-card" id="oca-accelerator" data-modal="modal-accelerator">
+                    <span class="action-icon-wrap accelerator">🚀</span>
+                    <div class="action-text">
+                        <span class="action-name">Accelerator Application</span>
+                        <span class="action-desc">Company + problem → full draft.</span>
+                    </div>
+                </button>
+                <button class="action-card" id="oca-summarize" data-modal="modal-summarize">
+                    <span class="action-icon-wrap summarize">📊</span>
+                    <div class="action-text">
+                        <span class="action-name">Summarize My Week</span>
+                        <span class="action-desc">AI reads your tasks & recaps.</span>
+                    </div>
+                </button>
+            </div>
+        </section>
+
+        <!-- ───────── Add Task ───────── -->
+        <section class="tasks-section" id="tasks-section">
+            <h3 class="section-title">✅ Tasks <span class="title-hint">(AI auto-scores priority)</span></h3>
+            <div class="add-task-form" id="add-task-form">
+                <input type="text" id="new-task-title" placeholder="Task title, e.g. Follow up with Sequoia partner" autocomplete="off">
+                <input type="date" id="new-task-deadline">
+                <button class="btn primary-btn" id="add-task-btn">Add Task</button>
+            </div>
+            <div class="task-list" id="task-list">
+                <!-- Tasks rendered dynamically, sorted by AI priority score -->
+            </div>
+        </section>
+
+        <!-- ───────── Lead / Follow-up Tracker ───────── -->
+        <section class="leads-section" id="leads-section">
+            <h3 class="section-title">🤝 Lead Tracker</h3>
+            <div class="add-lead-form" id="add-lead-form">
+                <input type="text" id="new-lead-name" placeholder="Contact name" autocomplete="off">
+                <input type="text" id="new-lead-company" placeholder="Company" autocomplete="off">
+                <input type="date" id="new-lead-date">
+                <button class="btn primary-btn" id="add-lead-btn">Add Lead</button>
+            </div>
+            <div class="leads-table-wrap">
+                <table class="leads-table" id="leads-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Company</th>
+                            <th>Last Contact</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="leads-tbody">
+                        <!-- Leads rendered dynamically -->
+                    </tbody>
+                </table>
+                <p class="empty-state" id="leads-empty">No leads yet. Add your first lead above.</p>
+            </div>
+        </section>
+    </main>
+
+    <!-- ───────── MODALS ───────── -->
+    <div class="modal-overlay" id="modal-overlay">
+
+        <!-- Follow Up Email Modal -->
+        <div class="modal" id="modal-followup">
+            <div class="modal-header">
+                <h3>📧 Follow Up Email</h3>
+                <button class="modal-close" data-close>&times;</button>
+            </div>
+            <div class="modal-body">
+                <label for="input-lead-name">Lead / Investor Name</label>
+                <input type="text" id="input-lead-name" placeholder="e.g. Sarah Chen from Acme Ventures" autocomplete="off">
+                <button class="btn primary-btn modal-generate" id="gen-followup">Generate Email</button>
+                <div class="modal-result" id="result-followup"></div>
+            </div>
+        </div>
+
+        <!-- Investor Update Modal -->
+        <div class="modal" id="modal-investor">
+            <div class="modal-header">
+                <h3>📈 Investor Update</h3>
+                <button class="modal-close" data-close>&times;</button>
+            </div>
+            <div class="modal-body">
+                <label for="input-mrr">Monthly Recurring Revenue (MRR)</label>
+                <input type="text" id="input-mrr" placeholder="e.g. $45,000" autocomplete="off">
+                <label for="input-win">Key Win This Month</label>
+                <input type="text" id="input-win" placeholder="e.g. Closed deal with Enterprise Corp" autocomplete="off">
+                <button class="btn primary-btn modal-generate" id="gen-investor">Generate Update</button>
+                <div class="modal-result" id="result-investor"></div>
+            </div>
+        </div>
+
+        <!-- Accelerator Application Modal -->
+        <div class="modal" id="modal-accelerator">
+            <div class="modal-header">
+                <h3>🚀 Accelerator Application</h3>
+                <button class="modal-close" data-close>&times;</button>
+            </div>
+            <div class="modal-body">
+                <label for="input-company">Company Name</label>
+                <input type="text" id="input-company" placeholder="e.g. FounderAI" autocomplete="off">
+                <label for="input-problem">Problem You Solve</label>
+                <input type="text" id="input-problem" placeholder="e.g. Startup founders waste 20hrs/week on ops" autocomplete="off">
+                <button class="btn primary-btn modal-generate" id="gen-accelerator">Draft Application</button>
+                <div class="modal-result" id="result-accelerator"></div>
+            </div>
+        </div>
+
+        <!-- Summarize Week Modal -->
+        <div class="modal" id="modal-summarize">
+            <div class="modal-header">
+                <h3>📊 Weekly Summary</h3>
+                <button class="modal-close" data-close>&times;</button>
+            </div>
+            <div class="modal-body">
+                <p class="modal-desc">AI will read all your tasks and generate a weekly recap.</p>
+                <button class="btn primary-btn modal-generate" id="gen-summarize">Summarize My Week</button>
+                <div class="modal-result" id="result-summarize"></div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="/js/firebase.js"></script>
+    <script type="module" src="/js/auth.js"></script>
+    <script type="module" src="/js/tasks.js"></script>
+</body>
+</html>
