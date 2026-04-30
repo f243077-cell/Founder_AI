@@ -1,8 +1,8 @@
 // ──────────────────────────────────────────────
-//  gemini.js — FounderAI API Functions + Chat UI
+//  ai.js — FounderAI API Functions + Chat UI
 // ──────────────────────────────────────────────
 
-export async function askGemini(message) {
+export async function askAI(message) {
     const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -88,7 +88,7 @@ document.addEventListener('DOMContentLoaded', () => {
         chatInput.disabled = true;
         sendBtn.disabled = true;
         try {
-            appendMessage(await askGemini(text), 'ai');
+            appendMessage(await askAI(text), 'ai');
         } catch (err) {
             appendMessage('Error communicating with FounderAI. Check your API key.', 'ai');
         } finally {
