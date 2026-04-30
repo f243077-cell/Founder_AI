@@ -128,12 +128,11 @@ gcloud run deploy founder-ai \
 
 ---
 
-## Team
+## Author
 
 | Member | Role |
 |--------|------|
-| Tanzeel Hussain | Full Stack + AI Integration |
-| [Teammate Name] | Frontend + Firebase |
+| Tanzeel Hussain | Full Stack + AI Integration + Frontend + Firebase  |
 
 ---
 
